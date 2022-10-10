@@ -1,7 +1,7 @@
 import http from 'http';
 import express, { Express } from 'express';
 import morgan from 'morgan';
-import guildRoutes from './routes/guild.routes';
+import commonRoutes from './routes/common.routes';
 import { Run } from './gameEngine/Run';
 
 const run: Run = new Run();
@@ -29,8 +29,7 @@ router.use((req, res, next) => {
 });
 
 /** Routes */
-router.use('/api/', guildRoutes.router);
-
+router.use('/api/', commonRoutes.router);
 
 /** Error handling */
 router.use((req, res, next) => {

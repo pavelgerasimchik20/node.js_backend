@@ -14,4 +14,7 @@ export class Queries {
     public static Guilds: string = "SELECT * FROM guild";
     public static GuildById: string = "SELECT * FROM guild WHERE guild_id =";
     public static INSERT: string = "INSERT INTO guild (guild_name, guild_description, guild_default_strong) VALUES (";
+    
+    public static Players: string = "SELECT * FROM player";
+    public static PlayerById: string = "SELECT * FROM player WHERE player_id =";
 }
