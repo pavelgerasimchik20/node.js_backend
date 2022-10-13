@@ -1,5 +1,5 @@
 import { Connection, SqlClient, Error } from "msnodesqlv8";
-import { playerObject } from "../entities";
+import { playerObject, entityWithId } from "../entities";
 import { ErrorCodes, General, DB_CONNECTION_STRING, Queries } from "../constants";
 import { ErrorHelper } from "../helpers/error.helpers";
 import { SqlHelper } from "../helpers/sql.helper";
@@ -15,7 +15,7 @@ export interface playerDTO {
 interface IPlayerService {
     getPlayers(): Promise<playerObject[]>;
     getPlayerById(id: number): Promise<playerObject>;
-    addPlayer(newObject: playerDTO): Promise<playerObject>;
+    addPlayer(newObject: playerDTO, userId: number): Promise<playerObject>;
     updatePlayerById(id: number): Promise<playerObject>;
     deletePlayerById(id: number): Promise<playerObject>;
 };
