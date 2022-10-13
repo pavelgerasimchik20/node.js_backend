@@ -14,55 +14,13 @@ export interface guildDTO {
 interface IGuildService {
     getGuilds(): Promise<guildObject[]>;
     getGuildById(id: number): Promise<guildObject>;
-    insertNewGuild(newObject: guildDTO): Promise<guildObject>;
-    updateGuildById(id: number): Promise<guildObject>;
-    deleteGuildById(id: number): Promise<guildObject>;
 };
 
 export class GuildService implements IGuildService {
-    // insertNewGuild(obj: guildDTO): Promise<guildObject> {
-    //     let result: guildObject;
-    //     return new Promise<guildObject>((resolve, reject) => {
-    //         const sql: SqlClient = require("msnodesqlv8");
-    //         const connectionString: string = DB_CONNECTION_STRING;
-    //         const query: string = `${Queries.INSERT}  '${obj.guild_name}', '${obj.guild_description}', ${obj.guild_default_strong})`;
-    //         sql.open(connectionString, (connectionError: Error, connection: Connection) => {
-    //             if (connectionError) {
-    //                 reject(ErrorHelper.parseError(ErrorCodes.ConnectionError, General.DbconnectionError));
-    //             }
-    //             else {
-    //                 connection.query(`${query}`, (queryError: Error | undefined, queryResult: guildDTO[] | undefined) => {
-    //                     if (queryError) {
-    //                         reject(ErrorHelper.parseError(ErrorCodes.queryError, General.SqlQueryError));
-    //                     }
-    //                     else {
-    //                         if (queryResult !== undefined && queryResult.length === 1) {
-    //                             result = this.parseDtoToEntity(queryResult[0])
-    //                         }
-    //                         else if (queryResult !== undefined && queryResult.length === 0) {
-    //                             //TO DO: Not Found 
-    //                         }
-    //                         resolve(result);
-    //                     }
-    //                 })
-    //             }
-    //         });
-    //     });
-    // }
-    insertNewGuild(id: guildDTO ): Promise<guildObject> {
-        throw new Error("Method not implemented.");
-    }
-    updateGuildById(id: number): Promise<guildObject> {
-        throw new Error("Method not implemented.");
-    }
-    deleteGuildById(id: number): Promise<guildObject> {
-        throw new Error("Method not implemented.");
-    }
-
+    
     public getGuilds(): Promise<guildObject[]> {
         return new Promise<guildObject[]>((resolve, reject) => {
             const sql: SqlClient = require("msnodesqlv8");
-
             const connectionString: string = DB_CONNECTION_STRING;
             const query: string = Queries.Guilds;
 

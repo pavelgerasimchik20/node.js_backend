@@ -20,37 +20,19 @@ interface IPlayerService {
 };
 
 export class PlayerService implements IPlayerService {
-    // insertNewGuild(obj: guildDTO): Promise<guildObject> {
-    //     let result: guildObject;
-    //     return new Promise<guildObject>((resolve, reject) => {
-    //         const sql: SqlClient = require("msnodesqlv8");
-    //         const connectionString: string = DB_CONNECTION_STRING;
-    //         const query: string = `${Queries.INSERT}  '${obj.guild_name}', '${obj.guild_description}', ${obj.guild_default_strong})`;
-    //         sql.open(connectionString, (connectionError: Error, connection: Connection) => {
-    //             if (connectionError) {
-    //                 reject(ErrorHelper.parseError(ErrorCodes.ConnectionError, General.DbconnectionError));
-    //             }
-    //             else {
-    //                 connection.query(`${query}`, (queryError: Error | undefined, queryResult: guildDTO[] | undefined) => {
-    //                     if (queryError) {
-    //                         reject(ErrorHelper.parseError(ErrorCodes.queryError, General.SqlQueryError));
-    //                     }
-    //                     else {
-    //                         if (queryResult !== undefined && queryResult.length === 1) {
-    //                             result = this.parseDtoToEntity(queryResult[0])
-    //                         }
-    //                         else if (queryResult !== undefined && queryResult.length === 0) {
-    //                             //TO DO: Not Found 
-    //                         }
-    //                         resolve(result);
-    //                     }
-    //                 })
-    //             }
-    //         });
-    //     });
-    // }
-    addPlayer(newObject: playerDTO ): Promise<playerObject> {
-        throw new Error("Method not implemented.");
+    
+    addPlayer(newObject: playerDTO, userId: number ): Promise<playerObject> {
+            return new Promise<playerObject>((resolve, reject) => {
+                const createDate: string = DateHelper.dateToString(new Date());
+                SqlHelper.createNew(this._errorService, Queries.AddWhiteBoardType, whiteBoardType, whiteBoardType.type, createDate, createDate, userId, userId, Status.Active)
+                    .then((result: entityWithId) => {
+                        resolve(result as whiteBoardType);
+                    })
+                    .catch((error: systemError) => {
+                        reject(error);
+                    });
+            });
+        
     }
     updatePlayerById(id: number): Promise<playerObject> {
         throw new Error("Method not implemented.");
