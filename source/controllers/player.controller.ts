@@ -1,169 +1,124 @@
 import { Request, Response, NextFunction } from 'express';
-import { ErrorCodes } from '../constants';
-import { systemError, playerObject } from '../entities';
-import { playerDTO, PlayerService } from '../services/player.service';
+import { NON_EXISTENT_ID } from '../constants';
+import { AuthenticatedRequest, systemError, playerObject } from '../entities';
+import { RequestHelper } from '../helpers/request.helper';
+import { ResponseHelper } from '../helpers/response.helper';
+import { ErrorService } from '../services/error.service';
+import { PlayerService } from '../services/player.service';
 
-const playerService: PlayerService = new PlayerService();
-
-// const insertNewGuild = async (req: Request, res: Response, next: NextFunction) => {
-//     guildService.insertNewGuild(a)
-//         .then((result: guildObject) => {
-//             return res.status(200).json({
-//                 message: result
-//             });
-//         })
-//         .catch((error: systemError) => {
-//             switch (error.code) {
-//                 case ErrorCodes.ConnectionError:
-//                     return res.status(408).json({
-//                         errorMessage: error.message
-//                     });
-//                 case ErrorCodes.queryError:
-//                     return res.status(406).json({
-//                         errorMessage: error.message
-//                     });
-//                 default:
-//                     return res.status(400).json({
-//                         errorMessage: error.message
-//                     });
-//             }
-//         });
-// };
-
-// const updateGuildById = async (req: Request, res: Response, next: NextFunction) => {
-//     let id: number = -1;
-//     const guildId: string = req.params.id;
-
-//     if (isNaN(Number(req.params.id))) {
-
-//     }
-
-//     if (guildId !== null && guildId !== undefined) {
-//         id = parseInt(guildId);
-//     }
-
-//     if (id > 0) {
-//         guildService.updateGuildById(id)
-//             .then((result: guildObject) => {
-//                 return res.status(200).json({
-//                     message: result
-//                 });
-//             })
-//             .catch((error: systemError) => {
-//                 switch (error.code) {
-//                     case ErrorCodes.ConnectionError:
-//                         return res.status(408).json({
-//                             errorMessage: error.message
-//                         });
-//                     case ErrorCodes.queryError:
-//                         return res.status(406).json({
-//                             errorMessage: error.message
-//                         });
-//                     default:
-//                         return res.status(400).json({
-//                             errorMessage: error.message
-//                         });
-//                 }
-//             });
-//     };
-// };
-
-// const deleteGuildById = async (req: Request, res: Response, next: NextFunction) => {
-//     let id: number = -1;
-//     const guildId: string = req.params.id;
-
-//     if (isNaN(Number(req.params.id))) {
-
-//     }
-
-//     if (guildId !== null && guildId !== undefined) {
-//         id = parseInt(guildId);
-//     }
-
-//     if (id > 0) {
-//         guildService.deleteGuildById(id)
-//             .then((result: guildObject) => {
-//                 return res.status(200).json({
-//                     message: result
-//                 });
-//             })
-//             .catch((error: systemError) => {
-//                 switch (error.code) {
-//                     case ErrorCodes.ConnectionError:
-//                         return res.status(408).json({
-//                             errorMessage: error.message
-//                         });
-//                     case ErrorCodes.queryError:
-//                         return res.status(406).json({
-//                             errorMessage: error.message
-//                         });
-//                     default:
-//                         return res.status(400).json({
-//                             errorMessage: error.message
-//                         });
-//                 }
-//             });
-//     };
-// };
+const errorService: ErrorService = new ErrorService();
+const playerService: PlayerService = new PlayerService(errorService);
 
 const getPlayers = async (req: Request, res: Response, next: NextFunction) => {
+    console.log("User data: ", (req as AuthenticatedRequest).userData);
     playerService.getPlayers()
         .then((result: playerObject[]) => {
             return res.status(200).json({
-                message: result
+                players: result
             });
         })
         .catch((error: systemError) => {
-            switch (error.code) {
-                case ErrorCodes.ConnectionError:
-                    return res.status(408).json({
-                        errorMessage: error.message
-                    });
-                case ErrorCodes.queryError:
-                    return res.status(406).json({
-                        errorMessage: error.message
-                    });
-                default:
-                    return res.status(400).json({
-                        errorMessage: error.message
-                    });
-            }
+            return ResponseHelper.handleError(res, error);
         });
 };
 
 const getPlayerById = async (req: Request, res: Response, next: NextFunction) => {
-    let id: number = -1;
-    const guildId: string = req.params.id;
-
-    if (isNaN(Number(req.params.id))) {}
-    if (guildId !== null && guildId !== undefined) {
-        id = parseInt(guildId);
-    }
-
-    if (id > 0) {
-        playerService.getPlayerById(id)
-            .then((result: playerObject) => {
-                return res.status(200).json({
-                    result
+    const numericParamOrError: number | systemError = RequestHelper.ParseNumericInput(errorService, req.params.id)
+    if (typeof numericParamOrError === "number") {
+        if (numericParamOrError > 0) {
+            playerService.getPlayerById(numericParamOrError)
+                .then((result: playerObject) => {
+                    return res.status(200).json(result);
+                })
+                .catch((error: systemError) => {
+                    return ResponseHelper.handleError(res, error);
                 });
-            })
-            .catch((error: systemError) => {
-                switch (error.code) {
-                    case ErrorCodes.ConnectionError:
-                        return res.status(408).json({
-                            errorMessage: error.message
-                        });
-                    case ErrorCodes.queryError:
-                        return res.status(406).json({
-                            errorMessage: error.message
-                        });
-                    default:
-                        return res.status(400).json({
-                            errorMessage: error.message
-                        });
-                }
-            });
+        }
+        else {
+            
+        }
+    }
+    else {
+        return ResponseHelper.handleError(res, numericParamOrError);
     }
 };
 
-export default { getPlayers, getPlayerById };
+const updatePlayersGuildById = async (req: Request, res: Response, next: NextFunction) => {
+    const numericParamOrError: number | systemError = RequestHelper.ParseNumericInput(errorService, req.params.id)
+    if (typeof numericParamOrError === "number") {
+        if (numericParamOrError > 0) {
+            const body: playerObject = req.body;
+
+            playerService.updatePlayersGuildById({
+                id: numericParamOrError,
+                name: body.name,
+                rating: body.rating,
+                guild: body.guild
+
+            }, (req as AuthenticatedRequest).userData.userId)
+                .then((result: playerObject) => {
+                    return res.status(200).json(result);
+                })
+                .catch((error: systemError) => {
+                    return ResponseHelper.handleError(res, error);
+                });
+        }
+        else {
+
+        }
+    }
+    else {
+        return ResponseHelper.handleError(res, numericParamOrError);
+    }
+};
+
+const addPlayer = async (req: Request, res: Response, next: NextFunction) => {
+    const body: playerObject = req.body;
+
+    playerService.addPlayer({
+        id: NON_EXISTENT_ID,
+        name: body.name,
+        rating: body.rating,
+        guild: body.guild
+    }, (req as AuthenticatedRequest).userData.userId)
+        .then((result: playerObject) => {
+            return res.status(200).json(result);
+        })
+        .catch((error: systemError) => {
+            return ResponseHelper.handleError(res, error);
+        });
+};
+
+const deletePlayerById = async (req: Request, res: Response, next: NextFunction) => {
+    const numericParamOrError: number | systemError = RequestHelper.ParseNumericInput(errorService, req.params.id)
+    if (typeof numericParamOrError === "number") {
+        if (numericParamOrError > 0) {
+            playerService.deletePlayerById(numericParamOrError)
+                .then(() => {
+                    return res.sendStatus(200);
+                })
+                .catch((error: systemError) => {
+                    return ResponseHelper.handleError(res, error);
+                });
+        }
+        else {
+            // TODO: Error handling
+        }
+    }
+    else {
+        return ResponseHelper.handleError(res, numericParamOrError);
+    }
+};
+
+const deletePlayerByTitle = async (req: Request, res: Response, next: NextFunction) => {
+    const title: string = req.params.title;
+            playerService.deletePlayerByTitle(title)
+                .then(() => {
+                    return res.sendStatus(200).json(`${title} is removed`);
+                })
+                .catch((error: systemError) => {
+                    return ResponseHelper.handleError(res, error);
+                });
+};
+
+export default { getPlayers, getPlayerById, updatePlayersGuildById, addPlayer, deletePlayerById, deletePlayerByTitle};

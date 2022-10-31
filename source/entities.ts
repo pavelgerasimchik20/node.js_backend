@@ -1,4 +1,3 @@
-
 import { Request } from 'express';
 import { AppError, Role } from "./enums";
 
@@ -14,14 +13,13 @@ export interface systemError {
     message: string;
 }
 
-export interface playerObject extends entityWithId{
-    id: number;
+export interface playerObject extends entityWithId {
     name: string;
     rating: number;
     guild: number;
 }
 export interface entityWithId {
-    id_entity: number;
+    id: number;
 }
 export interface systemError {
     key: AppError;

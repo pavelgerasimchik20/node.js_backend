@@ -1,80 +1,83 @@
-import { Connection, SqlClient, Error } from "msnodesqlv8";
-import { guildObject } from "../entities";
-import { ErrorCodes, General, DB_CONNECTION_STRING, Queries } from "../constants";
-import { ErrorHelper } from "../helpers/error.helpers";
+import * as _ from "underscore";
+import { Queries } from "../constants";
+import { entityWithId, systemError, guildObject } from "../entities";
+import { Status } from "../enums";
+import { DateHelper } from "../helpers/date.helper";
 import { SqlHelper } from "../helpers/sql.helper";
+import { ErrorService } from "./error.service";
 
-export interface guildDTO {
+interface guildDTO {
     guild_id: number;
     guild_name: string;
     guild_description: string;
     guild_default_strong: number;
+    create_date: Date;
+    update_date: Date;
+    create_user_id: number;
+    update_user_id: number;
+    status_id: Status
 }
 
 interface IGuildService {
     getGuilds(): Promise<guildObject[]>;
     getGuildById(id: number): Promise<guildObject>;
-};
+    updateGuildStrenghById(guildObject: guildObject, userId: number): Promise<guildObject>;
+}
 
 export class GuildService implements IGuildService {
-    
+
+    private _errorService: ErrorService;
+
+    constructor(
+        private errorService: ErrorService
+    ) {
+        this._errorService = errorService;
+    }
+
     public getGuilds(): Promise<guildObject[]> {
         return new Promise<guildObject[]>((resolve, reject) => {
-            const sql: SqlClient = require("msnodesqlv8");
-            const connectionString: string = DB_CONNECTION_STRING;
-            const query: string = Queries.Guilds;
+            const result: guildObject[] = [];
 
-            sql.open(connectionString, (connectionError: Error, connection: Connection) => {
-                if (connectionError) {
-                    reject(ErrorHelper.parseError(ErrorCodes.ConnectionError, General.DbconnectionError));
-                }
-                else {
-                    connection.query(query, (queryError: Error | undefined, queryResult: guildDTO[] | undefined) => {
-                        if (queryError) {
-                            reject(ErrorHelper.parseError(ErrorCodes.queryError, General.SqlQueryError));
-                        }
-                        else {
-                            const result: guildObject[] = [];
-                            if (queryResult !== undefined) {
-                                queryResult.forEach(guildDto => {
-                                    result.push(
-                                        this.parseDtoToEntity(guildDto)
-                                    )
-                                });
-                            }
-                            resolve(result);
-                        }
-                    })
-                }
-            });
-        })
-    };
+            SqlHelper.executeQueryArrayResult<guildDTO>(this._errorService, Queries.Guilds, Status.Active)
+                .then((queryResult: guildDTO[]) => {
+                    queryResult.forEach((whiteBoardType: guildDTO) => {
+                        result.push(this.parseToObject(whiteBoardType));
+                    });
+                    
+                    resolve(result);
+                })
+                .catch((error: systemError) => {
+                    reject(error);
+                });
+        });
+    }
 
     public getGuildById(id: number): Promise<guildObject> {
-        let result: guildObject;
         return new Promise<guildObject>((resolve, reject) => {
-            const query: string = Queries.GuildById;
-            SqlHelper.openConnection()
-                .then((connection: Connection) => {
-                    connection.query(`${query} ${id}`, (queryError: Error | undefined, queryResult: guildDTO[] | undefined) => {
-                        if (queryError) {
-                            reject(ErrorHelper.parseError(ErrorCodes.queryError, General.SqlQueryError));
-                        }
-                        else {
-                            if (queryResult !== undefined && queryResult.length === 1) {
-                                result = this.parseDtoToEntity(queryResult[0])
-                            }
-                            else if (queryResult !== undefined && queryResult.length === 0) {
-                                //TO DO: Not Found 
-                            }
-                            resolve(result);
-                        }
-                    })
-                }).catch();
+            SqlHelper.executeQuerySingleResult<guildDTO>(this._errorService, Queries.GuildById, id, Status.Active)
+                .then((queryResult: guildDTO) => {
+                    resolve(this.parseToObject(queryResult));
+                })
+                .catch((error: systemError) => {
+                    reject(error);
+                });
         });
-    };
+    }
 
-    private parseDtoToEntity(local: guildDTO): guildObject {
+    public updateGuildStrenghById(guildObject: guildObject, userId: number): Promise<guildObject> {
+        return new Promise<guildObject>((resolve, reject) => {
+            const updateDate: Date = new Date();
+            SqlHelper.executeQueryNoResult(this._errorService, Queries.UpdateGuildStrenghById, false, guildObject.strengh, DateHelper.dateToString(updateDate), userId, guildObject.id, Status.Active)
+                .then(() => {
+                    resolve(guildObject);
+                })
+                .catch((error: systemError) => {
+                    reject(error);
+                });
+        });
+    }
+ 
+    private parseToObject(local: guildDTO): guildObject {
         return {
             id: local.guild_id,
             name: local.guild_name,

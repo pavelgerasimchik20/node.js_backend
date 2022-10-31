@@ -1,10 +1,11 @@
 import http from 'http';
 import express, { Express } from 'express';
 import morgan from 'morgan';
-import commonRoutes from './routes/common.routes';
-import { Run } from './gameEngine/Run';
+import guildRoutes from './routes/guild.routes';
+import authenticationRoutes from './routes/authentication.routes';
+import playerRoutes from './routes/player.routes';
+import userRoutes from './routes/user.routes';
 
-const run: Run = new Run();
 const router: Express = express();
 
 /** Logging */
@@ -29,7 +30,10 @@ router.use((req, res, next) => {
 });
 
 /** Routes */
-router.use('/api/', commonRoutes.router);
+router.use('/user/', userRoutes.router);
+router.use('/guild/', guildRoutes.router);
+router.use('/auth/', authenticationRoutes.router);
+router.use('/player/', playerRoutes.router);
 
 /** Error handling */
 router.use((req, res, next) => {
@@ -41,7 +45,9 @@ router.use((req, res, next) => {
 
 /** Server */
 const httpServer = http.createServer(router);
-const PORT: any = process.env.PORT ?? 3000;  //console.log(`The server is running on port ${PORT}`)
-httpServer.listen(PORT, () => {
-    //run.makeQuestion()
-});
+const PORT: any = process.env.PORT ?? 1200;
+httpServer.listen(
+    PORT,
+    () => {
+        console.log(`The server is running on port ${PORT}`);
+    });

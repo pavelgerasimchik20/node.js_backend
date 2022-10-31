@@ -1,110 +1,128 @@
-import { Connection, SqlClient, Error } from "msnodesqlv8";
-import { playerObject, entityWithId } from "../entities";
-import { ErrorCodes, General, DB_CONNECTION_STRING, Queries } from "../constants";
-import { ErrorHelper } from "../helpers/error.helpers";
-import { SqlHelper } from "../helpers/sql.helper";
+import * as _ from "underscore";
+import { Queries } from "../constants";
+import { entityWithId, systemError, playerObject } from "../entities";
+import { Status } from "../enums";
 import { DateHelper } from "../helpers/date.helper";
+import { SqlHelper } from "../helpers/sql.helper";
+import { ErrorService } from "./error.service";
 
-export interface playerDTO {
-    player_id: number;
+interface playerDTO {
+    id: number;
     player_name: string;
-    player_rating: number;
-    player_guild: number;
+    create_date: Date;
+    update_date: Date;
+    create_user_id: number;
+    update_user_id: number;
+    status_id: number;
+    rating: number;
+    guild: number
 }
 
 interface IPlayerService {
+
     getPlayers(): Promise<playerObject[]>;
     getPlayerById(id: number): Promise<playerObject>;
-    addPlayer(newObject: playerDTO, userId: number): Promise<playerObject>;
-    updatePlayerById(id: number): Promise<playerObject>;
-    deletePlayerById(id: number): Promise<playerObject>;
-};
+    updatePlayersGuildById(playerObject: playerObject, userId: number): Promise<playerObject>;
+    addPlayer(playerObject: playerObject, userId: number): Promise<playerObject>;
+    deletePlayerById(id: number, userId: number): Promise<void>;
+    deletePlayerByTitle(title: string): Promise<void>
+}
 
 export class PlayerService implements IPlayerService {
-    
-    addPlayer(newObject: playerDTO, userId: number ): Promise<playerObject> {
-            return new Promise<playerObject>((resolve, reject) => {
-                const createDate: string = DateHelper.dateToString(new Date());
-                SqlHelper.createNew(this._errorService, Queries.AddWhiteBoardType, whiteBoardType, whiteBoardType.type, createDate, createDate, userId, userId, Status.Active)
-                    .then((result: entityWithId) => {
-                        resolve(result as whiteBoardType);
-                    })
-                    .catch((error: systemError) => {
-                        reject(error);
-                    });
-            });
-        
-    }
-    updatePlayerById(id: number): Promise<playerObject> {
-        throw new Error("Method not implemented.");
-    }
-    deletePlayerById(id: number): Promise<playerObject> {
-        throw new Error("Method not implemented.");
+
+    private _errorService: ErrorService;
+
+    constructor(
+        private errorService: ErrorService
+    ) {
+        this._errorService = errorService;
     }
 
     public getPlayers(): Promise<playerObject[]> {
         return new Promise<playerObject[]>((resolve, reject) => {
-            const sql: SqlClient = require("msnodesqlv8");
+            const result: playerObject[] = [];
 
-            const connectionString: string = DB_CONNECTION_STRING;
-            const query: string = Queries.Players;
-
-            sql.open(connectionString, (connectionError: Error, connection: Connection) => {
-                if (connectionError) {
-                    reject(ErrorHelper.parseError(ErrorCodes.ConnectionError, General.DbconnectionError));
-                }
-                else {
-                    connection.query(query, (queryError: Error | undefined, queryResult: playerDTO[] | undefined) => {
-                        if (queryError) {
-                            reject(ErrorHelper.parseError(ErrorCodes.queryError, General.SqlQueryError));
-                        }
-                        else {
-                            const result: playerObject[] = [];
-                            if (queryResult !== undefined) {
-                                queryResult.forEach(guildDto => {
-                                    result.push(
-                                        this.parseDtoToEntity(guildDto)
-                                    )
-                                });
-                            }
-                            resolve(result);
-                        }
-                    })
-                }
-            });
-        })
-    };
+            SqlHelper.executeQueryArrayResult<playerDTO>(this._errorService, Queries.Players, Status.Active)
+                .then((queryResult: playerDTO[]) => {
+                    queryResult.forEach((playerDTO: playerDTO) => {
+                        result.push(this.parseLocalBoardType(playerDTO));
+                    });
+                    resolve(result);
+                })
+                .catch((error: systemError) => {
+                    reject(error);
+                });
+        });
+    }
 
     public getPlayerById(id: number): Promise<playerObject> {
-        let result: playerObject;
         return new Promise<playerObject>((resolve, reject) => {
-            const query: string = Queries.PlayerById;
-            SqlHelper.openConnection()
-                .then((connection: Connection) => {
-                    connection.query(`${query} ${id}`, (queryError: Error | undefined, queryResult: playerDTO[] | undefined) => {
-                        if (queryError) {
-                            reject(ErrorHelper.parseError(ErrorCodes.queryError, General.SqlQueryError));
-                        }
-                        else {
-                            if (queryResult !== undefined && queryResult.length === 1) {
-                                result = this.parseDtoToEntity(queryResult[0])
-                            }
-                            else if (queryResult !== undefined && queryResult.length === 0) {
-                                //TO DO: Not Found 
-                            }
-                            resolve(result);
-                        }
-                    })
-                }).catch();
+            SqlHelper.executeQuerySingleResult<playerDTO>(this._errorService, Queries.PlayerById, id, Status.Active)
+                .then((queryResult: playerDTO) => {
+                    resolve(this.parseLocalBoardType(queryResult));
+                })
+                .catch((error: systemError) => {
+                    reject(error);
+                });
         });
-    };
+    }
 
-    private parseDtoToEntity(local: playerDTO): playerObject {
+    public updatePlayersGuildById(playerObject: playerObject, userId: number): Promise<playerObject> {
+        return new Promise<playerObject>((resolve, reject) => {
+            const updateDate: Date = new Date();
+            SqlHelper.executeQueryNoResult(this._errorService, Queries.UpdatePlayersGuildById, false, playerObject.guild, DateHelper.dateToString(updateDate), userId, playerObject.id, Status.Active)
+                .then(() => {
+                    resolve(playerObject);
+                })
+                .catch((error: systemError) => {
+                    reject(error);
+                });
+        });
+    }
+
+    public addPlayer(playerObject: playerObject, userId: number): Promise<playerObject> {
+        return new Promise<playerObject>((resolve, reject) => {
+            const createDate: string = DateHelper.dateToString(new Date());
+            SqlHelper.createNew(this._errorService, Queries.AddPlayer, playerObject, playerObject.name, createDate, createDate, userId, userId, Status.Active, playerObject.rating, playerObject.guild)
+                .then((result: entityWithId) => {
+                    resolve(result as playerObject);
+                })
+                .catch((error: systemError) => {
+                    reject(error);
+                });
+        });
+    }
+
+    public deletePlayerById(id: number): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            SqlHelper.executeQueryNoResult(this._errorService, Queries.DeletePlayerById, true, id, Status.Active)
+                .then(() => {
+                    resolve();
+                })
+                .catch((error: systemError) => {
+                    reject(error);
+                });
+        });
+    }
+
+    public deletePlayerByTitle(title: string): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            SqlHelper.executeQueryNoResult(this._errorService, Queries.DeletePlayerByTitle, true, `%${title}%`)
+                .then(() => {
+                    resolve();
+                })
+                .catch((error: systemError) => {
+                    reject(error);
+                });
+        });
+    }
+
+    private parseLocalBoardType(local: playerDTO): playerObject {
         return {
-            id: local.player_id,
+            id: local.id,
             name: local.player_name,
-            rating: local.player_rating,
-            guild: local.player_guild
-        }
+            rating: local.rating,
+            guild: local.guild,
+        };
     }
 }

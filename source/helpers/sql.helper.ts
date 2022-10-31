@@ -44,17 +44,17 @@ export class SqlHelper {
                     }
                     else {
                         const notFoundError: systemError = errorService.getError(AppError.NoData);
-                    
+
                         if (queryResult !== undefined) {
                             switch (queryResult.length) {
                                 case 0:
                                     reject(notFoundError);
                                     break;
-                            
+
                                 case 1:
                                     resolve(queryResult[0]);
                                     break;
-                            
+
                                 default: // In case more than a single result is returned
                                     resolve(queryResult[0]);
                                     break;
@@ -95,7 +95,7 @@ export class SqlHelper {
                             reject(errorService.getError(AppError.NoData));
                             return;
                         }
-                        
+
                         resolve();
                     });
 
@@ -140,60 +140,6 @@ export class SqlHelper {
                 .catch((error: systemError) => {
                     reject(error);
                 })
-        });
-    }
-
-    public static executeStoredProcedure(errorService: ErrorService, procedureName: string, original: entityWithId, ...params: (string | number)[]): Promise<entityWithId> {
-        return new Promise<entityWithId>((resolve, reject) => {
-            SqlHelper.openConnection(errorService)
-                .then((connection) => {
-                    const pm: ProcedureManager = connection.procedureMgr();
-                    pm.callproc(procedureName, params, (storedProcedureError: Error | undefined, results: entityWithId[] | undefined, output: any[] | undefined) => {
-                        if (storedProcedureError) {
-                            reject(errorService.getError(AppError.QueryError));
-                        }
-                        else {
-                            const id: number | null = SqlHelper.treatInsertResult2(results);
-                            if (id !== null) {
-                                original.id = id;
-                                resolve(original);
-                            }
-                            else {
-                                reject(errorService.getError(AppError.QueryError));
-                            }
-                        }
-                    });
-                })
-                .catch((error: systemError) => {
-                    reject(error);
-                });
-        });
-    }
-
-    public static executeStoredProcedureWithOutput(errorService: ErrorService, procedureName: string, original: entityWithId, ...params: (string | number)[]): Promise<entityWithId> {
-        return new Promise<entityWithId>((resolve, reject) => {
-            SqlHelper.openConnection(errorService)
-                .then((connection) => {
-                    const pm: ProcedureManager = connection.procedureMgr();
-                    params.push(original.id);
-                    pm.callproc(procedureName, params, (storedProcedureError: Error | undefined, results: any[] | undefined, output: number[] | undefined) => {
-                        if (storedProcedureError) {
-                            reject(errorService.getError(AppError.QueryError));
-                        }
-                        else {
-                            if (output?.length === 2) {
-                                original.id = output[1];
-                                resolve(original);
-                            }
-                            else {
-                                reject(errorService.getError(AppError.QueryError));
-                            }
-                        }
-                    });
-                })
-                .catch((error: systemError) => {
-                    reject(error);
-                });
         });
     }
 
