@@ -4,7 +4,6 @@ import { entityWithId, playerObject, systemError } from "../../entities";
 import { Status } from "../../enums";
 import { DateHelper } from "../../framework/date.helper";
 import { SqlHelper } from "../../core/sql.helper";
-import ErrorService from "../../core/error.service";
 
 interface playerDTO {
     id: number;
@@ -28,7 +27,7 @@ interface IPlayerService {
     deletePlayerByTitle(title: string): Promise<void>
 }
 
-export class PlayerService implements IPlayerService {
+class PlayerService implements IPlayerService {
 
     constructor() { }
 
@@ -36,7 +35,7 @@ export class PlayerService implements IPlayerService {
         return new Promise<playerObject[]>((resolve, reject) => {
             const result: playerObject[] = [];
 
-            SqlHelper.executeQueryArrayResult<playerDTO>(ErrorService, Queries.Players, Status.Active)
+            SqlHelper.executeQueryArrayResult<playerDTO>( Queries.Players, Status.Active)
                 .then((queryResult: playerDTO[]) => {
                     queryResult.forEach((playerDTO: playerDTO) => {
                         result.push(this.parseLocalBoardType(playerDTO));
@@ -51,7 +50,7 @@ export class PlayerService implements IPlayerService {
 
     public getPlayerById(id: number): Promise<playerObject> {
         return new Promise<playerObject>((resolve, reject) => {
-            SqlHelper.executeQuerySingleResult<playerDTO>(ErrorService, Queries.PlayerById, id, Status.Active)
+            SqlHelper.executeQuerySingleResult<playerDTO>( Queries.PlayerById, id, Status.Active)
                 .then((queryResult: playerDTO) => {
                     resolve(this.parseLocalBoardType(queryResult));
                 })
@@ -64,7 +63,7 @@ export class PlayerService implements IPlayerService {
     public updatePlayersGuildById(playerObject: playerObject, userId: number): Promise<playerObject> {
         return new Promise<playerObject>((resolve, reject) => {
             const updateDate: Date = new Date();
-            SqlHelper.executeQueryNoResult(ErrorService, Queries.UpdatePlayersGuildById, false, playerObject.guild, DateHelper.dateToString(updateDate), userId, playerObject.id, Status.Active)
+            SqlHelper.executeQueryNoResult( Queries.UpdatePlayersGuildById, false, playerObject.guild, DateHelper.dateToString(updateDate), userId, playerObject.id, Status.Active)
                 .then(() => {
                     resolve(playerObject);
                 })
@@ -77,7 +76,7 @@ export class PlayerService implements IPlayerService {
     public addPlayer(playerObject: playerObject, userId: number): Promise<playerObject> {
         return new Promise<playerObject>((resolve, reject) => {
             const createDate: string = DateHelper.dateToString(new Date());
-            SqlHelper.createNew(ErrorService, Queries.AddPlayer, playerObject, playerObject.name, createDate, createDate, userId, userId, Status.Active, playerObject.rating, playerObject.guild)
+            SqlHelper.createNew( Queries.AddPlayer, playerObject, playerObject.name, createDate, createDate, userId, userId, Status.Active, playerObject.rating, playerObject.guild)
                 .then((result: entityWithId) => {
                     resolve(result as playerObject);
                 })
@@ -89,7 +88,7 @@ export class PlayerService implements IPlayerService {
 
     public deletePlayerById(id: number): Promise<void> {
         return new Promise<void>((resolve, reject) => {
-            SqlHelper.executeQueryNoResult(ErrorService, Queries.DeletePlayerById, true, id, Status.Active)
+            SqlHelper.executeQueryNoResult( Queries.DeletePlayerById, true, id, Status.Active)
                 .then(() => {
                     resolve();
                 })
@@ -101,7 +100,7 @@ export class PlayerService implements IPlayerService {
 
     public deletePlayerByTitle(title: string): Promise<void> {
         return new Promise<void>((resolve, reject) => {
-            SqlHelper.executeQueryNoResult(ErrorService, Queries.DeletePlayerByTitle, true, `%${title}%`)
+            SqlHelper.executeQueryNoResult( Queries.DeletePlayerByTitle, true, `%${title}%`)
                 .then(() => {
                     resolve();
                 })
@@ -120,3 +119,5 @@ export class PlayerService implements IPlayerService {
         };
     }
 }
+
+export default new PlayerService();
